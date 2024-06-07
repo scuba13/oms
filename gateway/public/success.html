@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Thanks for your order!</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/cosmo/bootstrap.min.css">
+  <style>
+    html {
+      font-size: 16px;
+      margin: 0;
+      padding: 0;
+      background-color: #000204;
+      color: #333333;
+    }
+
+    section {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    .popup {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 0.25rem;
+      z-index: 1;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .popup p {
+      margin: 0;
+    }
+
+    .close-btn {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <section class="container">
+    <h1 class="display-4">Order Management System</h1>
+    <div class="alert alert-success" role="alert">
+      Your order has been placed successfully!
+    </div>
+
+    <p>
+      Order Status: <span id="orderStatus">Pending...</span>
+    </p>
+
+    <div class="popup ready-popup">
+      <p>Your order is ready for pickup!</p>
+      <p style="margin:10px;color:brown">Order number <b>#<span id="orderID"></span></b></p>
+      <button class="btn btn-success close-btn" onclick="document.querySelector('.ready-popup').style.display = 'none'">
+        Close
+      </button>
+    </div>
+
+    <div class="popup payment-popup">
+      <p>Waiting for payment...</p>
+      <a id="payment-link" href="#" class="btn btn-primary">Go to Payment</a>
+    </div>
+  </section>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const customerID = urlParams.get('customerID');
+    const orderID = urlParams.get('orderID');
+
+    const order = {
+      customerID,
+      orderID,
+      status: "pending"
+    };
+
+    const poolOrderStatus = async () => {
+      const response = await fetch(`/api/customers/${customerID}/orders/${orderID}`);
+      const data = await response.json();
+
+      if (data.Status === 'waiting_payment') {
+        order.Status = 'Your order is waiting for payment...';
+        document.getElementById('orderStatus').innerText = order.Status;
+        document.querySelector('.payment-popup').style.display = 'flex';
+        document.getElementById('payment-link').href = data.PaymentLink;
+      } else if (data.Status === 'paid') {
+        order.Status = 'Your order has been paid for. Please wait while it\'s being prepared...';
+        document.getElementById('orderStatus').innerText = order.Status;
+        setTimeout(poolOrderStatus, 5000);
+      } else if (data.Status === 'ready') {
+        order.Status = 'ready';
+        document.querySelector('.payment-popup').style.display = 'none';
+        document.querySelector('.ready-popup').style.display = 'flex';
+        document.getElementById('orderID').innerText = orderID;
+        document.getElementById('orderStatus').innerText = order.Status;
+      } else {
+        setTimeout(poolOrderStatus, 5000);
+      }
+    };
+
+    poolOrderStatus();
+  </script>
+</body>
+
+</html>

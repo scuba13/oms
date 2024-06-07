@@ -47,3 +47,9 @@ http://localhost:15672/#/
 
 Build Docker images for each microservice and push them to a container registry.
 Deploy using Docker Compose or orchestration tools like Kubernetes.
+
+Publishable key
+pk_test_51POf3ARwn3euj82DM78K8M066Bx9KcmH7km59i3bdpYS90TkoPedyvik0PBbG4WtZtoa7OiZV7bupAi7TNpzOAkp00UuNKwOif
+
+Secret key
+sk_test_51POf3ARwn3euj82DTKV1gVEqsvjI1p51zQVN5MwmLhcdRh7pfWhU1G0ADka6aK1x5S8DmYaeREEdaGAcESyn7Q9o00d7jecplw

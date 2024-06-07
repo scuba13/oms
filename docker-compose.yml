@@ -16,7 +16,6 @@ services:
     ports:
       - "15672:15672"
       - "5672:5672"
-      
   orders-mongo:
     image: "mongo:7.0.8"
     restart: always
@@ -25,7 +24,6 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
       - 27017:27017
-
   mongo-express:
     image: "mongo-express"
     restart: always
@@ -35,4 +33,15 @@ services:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@orders-mongo:27017/
-      ME_CONFIG_BASICAUTH: false
+      ME_CONFIG_BASICAUTH: "false"
+  stripe-cli:
+    image: stripe/stripe-cli
+    environment:
+      STRIPE_API_KEY: sk_test_51POf3ARwn3euj82DTKV1gVEqsvjI1p51zQVN5MwmLhcdRh7pfWhU1G0ADka6aK1x5S8DmYaeREEdaGAcESyn7Q9o00d7jecplw  # Use a sua chave de API secreta de teste do Stripe
+    entrypoint: sh -c "stripe listen --forward-to http://localhost:8081/webhook --api-key=$STRIPE_API_KEY"
+    network_mode: host
+    depends_on:
+      - consul
+      - rabbitmq
+      - orders-mongo
+      - mongo-express

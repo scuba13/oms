@@ -15,8 +15,11 @@ var gatewayHTTPAddr = common.EnvString("GATEWAY_HTTP_ADDRESS", "http://localhost
 type Stripe struct{}
 
 func NewProcessor() *Stripe {
+	// Configure a chave de API do Stripe diretamente no código
+	stripe.Key = "sk_test_51POf3ARwn3euj82DTKV1gVEqsvjI1p51zQVN5MwmLhcdRh7pfWhU1G0ADka6aK1x5S8DmYaeREEdaGAcESyn7Q9o00d7jecplw"
 	return &Stripe{}
 }
+
 
 func (s *Stripe) CreatePaymentLink(o *pb.Order) (string, error) {
 	log.Printf("Creating payment link for order %v", o)

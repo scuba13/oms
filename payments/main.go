@@ -28,7 +28,7 @@ var (
 	consulAddr           = common.EnvString("CONSUL_ADDR", "localhost:8500")
 	stripeKey            = common.EnvString("STRIPE_KEY", "")
 	httpAddr             = common.EnvString("HTTP_ADDR", "localhost:8081")
-	endpointStripeSecret = common.EnvString("STRIPE_ENDPOINT_SECRET", "whsec_...")
+	endpointStripeSecret = common.EnvString("STRIPE_ENDPOINT_SECRET", "whsec_18962801c0f8937ff95cdd9b9c7dad0a302bc11a131edefce3dd5f0d490f17d4")
 	jaegerAddr           = common.EnvString("JAEGER_ADDR", "localhost:4318")
 )
 

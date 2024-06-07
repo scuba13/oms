@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"time"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -15,36 +17,57 @@ import (
 
 var (
 	serviceName = "gateway"
-	httpAddr    = common.EnvString("HTTP_ADDR", ":8080")
 	consulAddr  = common.EnvString("CONSUL_ADDR", "localhost:8500")
-	jaegerAddr  = common.EnvString("JAEGER_ADDR", "localhost:4318")
 )
 
 func main() {
 	log.Printf("Initializing service: %s", serviceName)
 
-	err := common.SetGlobalTracer(context.TODO(), serviceName, jaegerAddr)
+	// Set up Consul registry
+	registry, err := consul.NewRegistry(consulAddr, serviceName)
 	if err != nil {
+		log.Fatalf("Failed to create Consul registry: %v", err)
+	}
+
+	// Fetch HTTP_ADDR and JAEGER_ADDR from Consul
+	ctx := context.Background()
+	httpAddr, err := registry.GetValue(ctx, "HTTP_ADDR")
+	if err != nil {
+		log.Fatalf("Failed to get HTTP_ADDR from Consul: %v", err)
+	}
+
+	jaegerAddr, err := registry.GetValue(ctx, "JAEGER_ADDR")
+	if err != nil {
+		log.Fatalf("Failed to get JAEGER_ADDR from Consul: %v", err)
+	}
+
+	log.Printf("Using HTTP_ADDR: %s", httpAddr)
+	log.Printf("Using JAEGER_ADDR: %s", jaegerAddr)
+
+	// Set up tracing
+	if err := common.SetGlobalTracer(ctx, serviceName, jaegerAddr); err != nil {
 		log.Fatalf("Failed to set global tracer: %v", err)
 	}
 
-	registry, err := consul.NewRegistry(consulAddr, serviceName)
-	if err != nil {
-		log.Fatalf("Failed to create consul registry: %v", err)
-	}
-
-	ctx := context.Background()
+	// Register service with Consul
 	instanceID := discovery.GenerateInstanceID(serviceName)
 	if err := registry.Register(ctx, instanceID, serviceName, httpAddr); err != nil {
-		log.Fatalf("Failed to register service with consul: %v", err)
+		log.Fatalf("Failed to register service with Consul: %v", err)
 	}
 
+	// Start health check routine
 	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
 		for {
-			if err := registry.HealthCheck(instanceID, serviceName); err != nil {
-				log.Printf("Failed health check: %v", err)
+			select {
+			case <-ticker.C:
+				if err := registry.HealthCheck(instanceID, serviceName); err != nil {
+					log.Printf("Failed health check: %v", err)
+				}
+			case <-ctx.Done():
+				return
 			}
-			time.Sleep(time.Second * 1)
 		}
 	}()
 
@@ -54,6 +77,7 @@ func main() {
 		}
 	}()
 
+	// Set up HTTP server
 	mux := http.NewServeMux()
 
 	ordersGateway := gateway.NewGRPCGateway(registry)
@@ -64,9 +88,33 @@ func main() {
 	handler := NewHandler(ordersGateway)
 	handler.registerRoutes(mux)
 
-	log.Printf("Starting HTTP server at %s", httpAddr)
-
-	if err := http.ListenAndServe(httpAddr, mux); err != nil {
-		log.Fatalf("Failed to start HTTP server: %v", err)
+	server := &http.Server{
+		Addr:    httpAddr,
+		Handler: mux,
 	}
+
+	// Graceful shutdown
+	go func() {
+		log.Printf("Starting HTTP server at %s", httpAddr)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Failed to start HTTP server: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt)
+
+	<-stop
+
+	log.Println("Shutting down server...")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server exiting")
 }

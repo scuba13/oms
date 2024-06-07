@@ -74,3 +74,15 @@ func (r *Registry) Discover(ctx context.Context, serviceName string) ([]string, 
 
 	return instances, nil
 }
+
+// GetValue retrieves the value for a given key from Consul
+func (r *Registry) GetValue(ctx context.Context, key string) (string, error) {
+	kvPair, _, err := r.client.KV().Get(key, nil)
+	if err != nil {
+		return "", err
+	}
+	if kvPair == nil {
+		return "", errors.New("key not found")
+	}
+	return string(kvPair.Value), nil
+}

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	common "github.com/scuba13/oms/commons"
@@ -59,16 +60,21 @@ func (h *handler) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 func (h *handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	customerID := r.PathValue("customerID")
 
-	var items []*pb.ItemsWithQuantity
-	if err := common.ReadJSON(r, &items); err != nil {
-		common.WriteError(w, http.StatusBadRequest, err.Error())
-		return
+	var req struct {
+		Items []*pb.ItemsWithQuantity `json:"Items"`
 	}
 
-	if err := validateItems(items); err != nil {
+	if err := common.ReadJSON(r, &req); err != nil {
+		common.WriteError(w, http.StatusBadRequest, fmt.Sprintf("invalid request body: %v", err))
+		return
+	}
+	log.Printf("Request: %+v", req)
+
+	if err := validateItems(req.Items); err != nil {
 		common.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	log.Printf("Items: %+v", req.Items)
 
 	// Create a tracer span
 	tr := otel.Tracer("http")
@@ -77,7 +83,7 @@ func (h *handler) handleCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	o, err := h.gateway.CreateOrder(ctx, &pb.CreateOrderRequest{
 		CustomerID: customerID,
-		Items:      items,
+		Items:      req.Items,
 	})
 	rStatus := status.Convert(err)
 	if rStatus != nil {
