@@ -3,7 +3,7 @@ package gateway
 import (
 	"context"
 
-	pb "github.com/scuba13/oms/commons/api"
+	pb "github.com/scuba13/oms/common/api"
 )
 
 type StockGateway interface {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	_ "github.com/joho/godotenv/autoload"
-	common "github.com/scuba13/oms/commons"
+	//_ "github.com/joho/godotenv/autoload"
+	common "github.com/scuba13/oms/common"
 	"github.com/scuba13/oms/gateway/gateway"
 	"log"
 )
@@ -38,28 +38,27 @@ func main() {
 	}
 
 	// Define configuration keys to fetch
-	keys := []string{"HTTP_ADDR", "JAEGER_ADDR"}
+	keys := []string{"gateway/HTTP_ADDR", "common/JAEGER_ADDR"}
 	// Fetch configuration values from Consul
 	config, err := common.FetchConfiguration(ctx, registry, keys)
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to fetch configuration: %v", err)
 	}
-	httpAddr := config["HTTP_ADDR"]
-	jaegerAddr := config["JAEGER_ADDR"]
+	httpAddr := config["gateway/HTTP_ADDR"]
+	jaegerAddr := config["common/JAEGER_ADDR"]
 
 	// Set up tracing
 	if err := common.SetGlobalTracer(ctx, serviceName, jaegerAddr); err != nil {
 		logger.Sugar().Fatalf("Failed to set global tracer: %v", err)
 	}
 
-	// Register service with Consul
-	instanceID, err := common.RegisterService(ctx, registry, serviceName, httpAddr)
+	// Register service and start health check routine
+	instanceID, cancelMonitor, err := common.RegisterAndMonitorService(ctx, registry, serviceName, httpAddr)
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to register service with Consul: %v", err)
 	}
-
-	// Start health check routine
-	common.StartHealthCheckRoutine(ctx, registry, instanceID, serviceName)
+	logger.Sugar().Infof("Service registered with Consul: %s", instanceID)
+	defer cancelMonitor()
 
 	// Set up HTTP server
 	mux := http.NewServeMux()
@@ -70,5 +69,5 @@ func main() {
 	server := common.SetupHTTPServer(httpAddr, mux)
 
 	// Handle graceful shutdown
-	common.HandleGracefulShutdown(ctx, cancel, registry, instanceID, serviceName, server)
+	common.HandleGracefulShutdown(ctx, cancel, server)
 }

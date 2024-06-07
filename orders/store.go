@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	pb "github.com/scuba13/oms/commons/api"
+	pb "github.com/scuba13/oms/common/api"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

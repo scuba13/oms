@@ -1,6 +1,6 @@
 package inmem
 
-import pb "github.com/scuba13/oms/commons/api"
+import pb "github.com/scuba13/oms/common/api"
 
 type Inmem struct {}
 

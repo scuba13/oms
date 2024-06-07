@@ -6,7 +6,7 @@ import (
 	"log"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/scuba13/oms/commons/broker"
+	"github.com/scuba13/oms/common/broker"
 	"go.opentelemetry.io/otel"
 )
 

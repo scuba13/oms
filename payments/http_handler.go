@@ -11,8 +11,8 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	pb "github.com/scuba13/oms/commons/api"
-	"github.com/scuba13/oms/commons/broker"
+	pb "github.com/scuba13/oms/common/api"
+	"github.com/scuba13/oms/common/broker"
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/webhook"
 	"go.opentelemetry.io/otel"

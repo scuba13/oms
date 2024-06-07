@@ -2,19 +2,19 @@ package common
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/scuba13/oms/commons/broker"
-	"github.com/scuba13/oms/commons/discovery"
-	"github.com/scuba13/oms/commons/discovery/consul"
+	"github.com/scuba13/oms/common/broker"
+	"github.com/scuba13/oms/common/discovery"
+	"github.com/scuba13/oms/common/discovery/consul"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"net"
 )
 
 // SetupLogging initializes the global logger using a custom Zap configuration.
@@ -56,15 +56,13 @@ func FetchConfiguration(ctx context.Context, registry *consul.Registry, keys []s
 	return config, nil
 }
 
-func RegisterService(ctx context.Context, registry *consul.Registry, serviceName, addr string) (string, error) {
+func RegisterAndMonitorService(ctx context.Context, registry *consul.Registry, serviceName, addr string) (string, context.CancelFunc, error) {
 	instanceID := discovery.GenerateInstanceID(serviceName)
 	if err := registry.Register(ctx, instanceID, serviceName, addr); err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return instanceID, nil
-}
 
-func StartHealthCheckRoutine(ctx context.Context, registry *consul.Registry, instanceID, serviceName string) {
+	cancelCtx, cancel := context.WithCancel(ctx)
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
@@ -74,14 +72,25 @@ func StartHealthCheckRoutine(ctx context.Context, registry *consul.Registry, ins
 				if err := registry.HealthCheck(instanceID, serviceName); err != nil {
 					zap.S().Errorf("Failed health check: %v", err)
 				}
-			case <-ctx.Done():
+			case <-cancelCtx.Done():
 				return
 			}
 		}
 	}()
+
+	go func() {
+		<-cancelCtx.Done()
+		if err := registry.Deregister(context.Background(), instanceID, serviceName); err != nil {
+			zap.S().Errorf("Failed to deregister service: %v", err)
+		} else {
+			zap.S().Infof("Service %s with instance ID %s deregistered successfully", serviceName, instanceID)
+		}
+	}()
+
+	return instanceID, cancel, nil
 }
 
-func HandleGracefulShutdown(ctx context.Context, cancel context.CancelFunc, registry *consul.Registry, instanceID, serviceName string, servers ...*http.Server) {
+func HandleGracefulShutdown(ctx context.Context, cancel context.CancelFunc, servers ...*http.Server) {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 
@@ -98,10 +107,6 @@ func HandleGracefulShutdown(ctx context.Context, cancel context.CancelFunc, regi
 				zap.S().Fatalf("Server forced to shutdown: %v", err)
 			}
 		}
-	}
-
-	if err := registry.Deregister(ctx, instanceID, serviceName); err != nil {
-		zap.S().Errorf("Failed to deregister service: %v", err)
 	}
 
 	cancel()

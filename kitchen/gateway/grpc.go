@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	pb "github.com/scuba13/oms/commons/api"
-	"github.com/scuba13/oms/commons/discovery"
+	pb "github.com/scuba13/oms/common/api"
+	"github.com/scuba13/oms/common/discovery"
 )
 
 type Gateway struct {

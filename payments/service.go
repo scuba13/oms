@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	pb "github.com/scuba13/oms/commons/api"
+	pb "github.com/scuba13/oms/common/api"
 	"github.com/scuba13/oms/payments/gateway"
 	"github.com/scuba13/oms/payments/processor"
 )

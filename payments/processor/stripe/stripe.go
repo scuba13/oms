@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	common "github.com/scuba13/oms/commons"
-	pb "github.com/scuba13/oms/commons/api"
+	common "github.com/scuba13/oms/common"
+	pb "github.com/scuba13/oms/common/api"
 	"github.com/stripe/stripe-go/v78"
 	"github.com/stripe/stripe-go/v78/checkout/session"
 )

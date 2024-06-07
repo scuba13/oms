@@ -4,7 +4,7 @@ import (
 	"context"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	pb "github.com/scuba13/oms/commons/api"
+	pb "github.com/scuba13/oms/common/api"
 	"google.golang.org/grpc"
 )
 

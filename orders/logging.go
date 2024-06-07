@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pb "github.com/scuba13/oms/commons/api"
+	pb "github.com/scuba13/oms/common/api"
 	"go.uber.org/zap"
 )
 

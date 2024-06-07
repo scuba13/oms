@@ -1,6 +1,6 @@
-module github.com/scuba13/oms/commons
+module github.com/scuba13/oms/common
 
-go 1.22.3
+go 1.22.4
 
 require (
 	github.com/hashicorp/consul/api v1.26.1

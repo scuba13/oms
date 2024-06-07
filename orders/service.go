@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 
-	common "github.com/scuba13/oms/commons"
-	pb "github.com/scuba13/oms/commons/api"
+	common "github.com/scuba13/oms/common"
+	pb "github.com/scuba13/oms/common/api"
 	"github.com/scuba13/oms/orders/gateway"
 )
 

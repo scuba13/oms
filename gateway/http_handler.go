@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	common "github.com/scuba13/oms/commons"
-	pb "github.com/scuba13/oms/commons/api"
+	common "github.com/scuba13/oms/common"
+	pb "github.com/scuba13/oms/common/api"
 	"github.com/scuba13/oms/gateway/gateway"
 	"go.opentelemetry.io/otel"
 	otelCodes "go.opentelemetry.io/otel/codes"
